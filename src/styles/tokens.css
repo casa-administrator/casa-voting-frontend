@@ -1,0 +1,155 @@
+@import url(
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kantumruy+Pro:wght@400;500;600;700&display=swap"
+);
+
+
+:root {
+  /* Fonts */
+
+  --font-en:
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --font-km:
+    "Kantumruy Pro",
+    sans-serif;
+
+
+  /* CASA green */
+
+  --casa-950:
+    #0b3324;
+
+  --casa-900:
+    #113f2d;
+
+  --casa-800:
+    #14543a;
+
+  --casa-700:
+    #176b46;
+
+  --casa-600:
+    #208158;
+
+  --casa-500:
+    #2a9768;
+
+  --casa-100:
+    #e8f5ee;
+
+  --casa-50:
+    #f2faf6;
+
+
+  /* Surface */
+
+  --page-bg:
+    #f5f7f8;
+
+  --surface:
+    #ffffff;
+
+  --surface-soft:
+    #f8faf9;
+
+
+  /* Text */
+
+  --text:
+    #182230;
+
+  --text-secondary:
+    #475467;
+
+  --muted:
+    #667085;
+
+  --muted-light:
+    #98a2b3;
+
+
+  /* Border */
+
+  --border:
+    #e4e7ec;
+
+  --border-strong:
+    #d0d5dd;
+
+
+  /* Status */
+
+  --success:
+    #18794e;
+
+  --success-bg:
+    #ecf8f1;
+
+  --warning:
+    #9a6700;
+
+  --warning-bg:
+    #fff8e6;
+
+  --danger:
+    #b42318;
+
+  --danger-bg:
+    #fff2f0;
+
+  --info:
+    #175cd3;
+
+  --info-bg:
+    #eff6ff;
+
+
+  /* Radius */
+
+  --radius-sm:
+    8px;
+
+  --radius-md:
+    12px;
+
+  --radius-lg:
+    16px;
+
+
+  /* Shadows */
+
+  --shadow-card:
+    0 1px 2px
+    rgba(
+      16,
+      24,
+      40,
+      0.05
+    );
+
+  --shadow-floating:
+    0 16px 40px
+    rgba(
+      16,
+      24,
+      40,
+      0.14
+    );
+
+
+  /* Layout */
+
+  --sidebar-width:
+    268px;
+
+  --header-height:
+    72px;
+
+  --content-max:
+    1440px;
+}

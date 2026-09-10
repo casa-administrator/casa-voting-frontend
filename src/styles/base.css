@@ -1,0 +1,172 @@
+*,
+*::before,
+*::after {
+  box-sizing:
+    border-box;
+}
+
+
+html {
+  min-width:
+    320px;
+
+  background:
+    var(--page-bg);
+}
+
+
+body {
+  min-width:
+    320px;
+
+  min-height:
+    100vh;
+
+  margin:
+    0;
+
+  background:
+    var(--page-bg);
+
+  color:
+    var(--text);
+
+  font-family:
+    var(--font-en);
+
+  font-size:
+    14px;
+
+  line-height:
+    1.55;
+
+  -webkit-font-smoothing:
+    antialiased;
+}
+
+
+html[lang="km"]
+body {
+  font-family:
+    var(--font-km);
+
+  line-height:
+    1.7;
+}
+
+
+html[lang="km"]
+button,
+html[lang="km"]
+input,
+html[lang="km"]
+textarea,
+html[lang="km"]
+select {
+  font-family:
+    var(--font-km);
+}
+
+
+html[lang="en"]
+body,
+html[lang="en"]
+button,
+html[lang="en"]
+input,
+html[lang="en"]
+textarea,
+html[lang="en"]
+select {
+  font-family:
+    var(--font-en);
+}
+
+
+#root {
+  min-height:
+    100vh;
+}
+
+
+a {
+  color:
+    inherit;
+
+  text-decoration:
+    none;
+}
+
+
+button,
+input,
+textarea,
+select {
+  font:
+    inherit;
+}
+
+
+button {
+  cursor:
+    pointer;
+}
+
+
+button:disabled {
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.6;
+}
+
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-top:
+    0;
+}
+
+
+h1,
+h2,
+h3,
+h4 {
+  color:
+    var(--text);
+
+  font-weight:
+    700;
+}
+
+
+html[lang="km"]
+h1,
+html[lang="km"]
+h2,
+html[lang="km"]
+h3,
+html[lang="km"]
+h4 {
+  font-family:
+    var(--font-km);
+
+  font-weight:
+    700;
+
+  line-height:
+    1.65;
+}
+
+
+img {
+  display:
+    block;
+
+  max-width:
+    100%;
+}
