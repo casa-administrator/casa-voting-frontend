@@ -1,5 +1,8 @@
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
+
 const API_PREFIX =
-  "/api/v1";
+  `${API_BASE_URL}/api/v1`;
 
 
 export class ApiError extends Error {
