@@ -1799,7 +1799,24 @@ const en = {
         saveSuccess:
             "Vote updated successfully.",
     },
-    
+    publicShare: {
+        title: "Public Voting Link",
+        liveDescription:
+            "Share this link or QR code with voters to access the live election.",
+        scheduledDescription:
+            "You can prepare and share this link before voting begins. Voting will become available when the election is live.",
+        publicLink: "Public link",
+        copyLink: "Copy Link",
+        copied: "Copied",
+        share: "Share",
+        open: "Open Voting Page",
+        downloadQr: "Download QR Code",
+        copyError:
+            "Unable to copy the voting link.",
+        shareTitle: "CASA Voting System",
+        shareText:
+            "Open the CASA Voting System to cast your vote.",
+    },
   },
 };
 

@@ -7906,6 +7906,78 @@ button:disabled {
   margin-top: 10px;
 }
 
+.public-share-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 32px;
+  align-items: center;
+}
+
+.public-share-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.public-share-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.public-share-url {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 620px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.public-share-url span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.public-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.public-share-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.public-share-qr-code {
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+@media (max-width: 760px) {
+  .public-share-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .public-share-qr {
+    justify-self: center;
+  }
+
+  .public-share-actions {
+    width: 100%;
+  }
+}
+
 
 @media (max-width: 640px) {
   .result-visibility-controls {

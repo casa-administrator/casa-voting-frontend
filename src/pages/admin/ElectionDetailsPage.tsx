@@ -15,22 +15,15 @@ import {
 } from "../../api/elections";
 
 import { useAuth } from "../../auth/useAuth";
-
 import { Button, ButtonLink } from "../../components/ui/Button";
-
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-
 import { EmptyState } from "../../components/ui/EmptyState";
-
 import { PageHeader } from "../../components/ui/PageHeader";
-
 import { StatusBadge } from "../../components/ui/StatusBadge";
-
 import { CandidateManager } from "../../features/elections/CandidateManager";
-
 import { ElectionLifecycle } from "../../features/elections/ElectionLifecycle";
-
 import { ElectionReadinessPanel } from "../../features/elections/ElectionReadiness";
+import { PublicVoteShareCard } from "../../components/elections/PublicVoteShareCard";
 
 import type {
   Election,
@@ -437,6 +430,10 @@ export function ElectionDetailsPage() {
           onElectionChanged={handleElectionChanged}
         />
       </div>
+      <PublicVoteShareCard
+        electionId={election.id}
+        electionStatus={election.status}
+      />
     </div>
   );
 }
