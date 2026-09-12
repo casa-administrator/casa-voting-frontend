@@ -11,7 +11,7 @@ export interface Candidate {
 
   last_name: string;
 
-  position: string | null;
+  from: string | null;
 
   description: string | null;
 
@@ -43,7 +43,7 @@ export interface CreateCandidateRequest {
 
   last_name: string;
 
-  position: string | null;
+  from: string | null;
 
   description: string | null;
 
@@ -64,7 +64,7 @@ export interface UpdateCandidateRequest {
 
   last_name: string;
 
-  position: string | null;
+  from: string | null;
 
   description: string | null;
 

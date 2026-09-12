@@ -31,7 +31,7 @@ export interface PublicCandidate {
 
   last_name: string;
 
-  position: string | null;
+  from: string | null;
 
   description: string | null;
 

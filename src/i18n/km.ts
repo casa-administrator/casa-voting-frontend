@@ -528,8 +528,7 @@ const km = {
         candidate:
             "បេក្ខជន",
 
-        position:
-            "តួនាទី",
+        from: "មកពី",
 
         displayOrder:
             "លំដាប់បង្ហាញ",

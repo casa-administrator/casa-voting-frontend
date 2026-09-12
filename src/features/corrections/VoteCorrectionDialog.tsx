@@ -263,7 +263,7 @@ export function VoteCorrectionDialog({
 
                     <strong>{candidateName(candidate)}</strong>
 
-                    {candidate.position && <small>{candidate.position}</small>}
+                    {candidate.from && <small>{candidate.from}</small>}
                   </div>
                 </button>
               );

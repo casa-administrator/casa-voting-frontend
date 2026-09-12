@@ -333,7 +333,7 @@ function AdminCandidateResult({
 
         <h3>{candidateName(candidate)}</h3>
 
-        {candidate.position && <p>{candidate.position}</p>}
+        {candidate.from && <p>{candidate.from}</p>}
       </div>
 
       <div className="admin-result-bar-area">

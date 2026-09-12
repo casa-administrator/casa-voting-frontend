@@ -445,7 +445,7 @@ function CandidateChoice({
 
         <h3>{candidateName(candidate)}</h3>
 
-        {candidate.position && <strong>{candidate.position}</strong>}
+        {candidate.from && <strong>{candidate.from}</strong>}
 
         {candidate.description && <p>{candidate.description}</p>}
       </div>

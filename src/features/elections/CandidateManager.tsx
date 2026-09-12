@@ -222,7 +222,7 @@ export function CandidateManager({
 
                 <th>{t("candidates.candidate")}</th>
 
-                <th>{t("candidates.position")}</th>
+                <th>{t("candidates.from")}</th>
 
                 <th>{t("candidates.displayOrder")}</th>
 
@@ -262,7 +262,7 @@ export function CandidateManager({
                     </div>
                   </td>
 
-                  <td>{candidate.position || "—"}</td>
+                  <td>{candidate.from || "—"}</td>
 
                   <td>{candidate.display_order}</td>
 
@@ -361,7 +361,7 @@ function CandidateForm({
 
   const [lastName, setLastName] = useState(candidate?.last_name ?? "");
 
-  const [position, setPosition] = useState(candidate?.position ?? "");
+  const [candidateFrom, setCandidateFrom] = useState(candidate?.from ?? "");
 
   const [description, setDescription] = useState(candidate?.description ?? "");
 
@@ -399,7 +399,7 @@ function CandidateForm({
 
           last_name: lastName.trim(),
 
-          position: position.trim() || null,
+          from: candidateFrom.trim() || null,
 
           description: description.trim() || null,
 
@@ -417,7 +417,7 @@ function CandidateForm({
 
           last_name: lastName.trim(),
 
-          position: position.trim() || null,
+          from: candidateFrom.trim() || null,
 
           description: description.trim() || null,
 
@@ -505,11 +505,11 @@ function CandidateForm({
           />
         </FormField>
 
-        <FormField label={t("candidates.position")} full>
+        <FormField label={t("candidates.from")} full>
           <input
             type="text"
-            value={position}
-            onChange={(event) => setPosition(event.target.value)}
+            value={candidateFrom}
+            onChange={(event) => setCandidateFrom(event.target.value)}
           />
         </FormField>
 
@@ -570,7 +570,7 @@ function CandidateForm({
 }
 
 function candidateName(candidate: Candidate) {
-  return [candidate.title, candidate.first_name, candidate.last_name]
+  return [candidate.title, candidate.last_name, candidate.first_name]
     .filter(Boolean)
     .join(" ");
 }

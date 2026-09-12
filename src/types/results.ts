@@ -9,7 +9,7 @@ export interface CandidateResult {
 
   last_name: string;
 
-  position: string | null;
+  from: string | null;
 
   vote_count: number;
 

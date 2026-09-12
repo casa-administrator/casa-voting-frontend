@@ -530,8 +530,7 @@ const en = {
         candidate:
             "Candidate",
 
-        position:
-            "Position",
+        from: "From",
 
         displayOrder:
             "Display Order",

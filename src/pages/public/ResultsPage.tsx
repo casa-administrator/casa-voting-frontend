@@ -257,7 +257,7 @@ export function ResultsPage() {
 
             <h2>{candidateName(leader)}</h2>
 
-            {leader.position && <p>{leader.position}</p>}
+            {leader.from && <p>{leader.from}</p>}
           </div>
 
           <div className="leader-votes">
@@ -350,7 +350,7 @@ function CandidateResultRow({
 
         <h3>{candidateName(candidate)}</h3>
 
-        {candidate.position && <p>{candidate.position}</p>}
+        {candidate.from && <p>{candidate.from}</p>}
       </div>
 
       <div className="result-progress-area">
