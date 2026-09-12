@@ -1,9 +1,15 @@
 import { Check, Copy, Download, ExternalLink, Share2 } from "lucide-react";
+
 import { useRef, useState } from "react";
+
 import { QRCodeSVG } from "qrcode.react";
+
 import { useTranslation } from "react-i18next";
 
+import casaLogo from "../../../public/casa-logo.png";
+
 import { Button } from "../ui/Button";
+
 import { Card, CardBody, CardHeader } from "../ui/Card";
 
 interface PublicVoteShareCardProps {
@@ -44,7 +50,9 @@ export function PublicVoteShareCard({
       try {
         await navigator.share({
           title: t("publicShare.shareTitle"),
+
           text: t("publicShare.shareText"),
+
           url: publicVoteUrl,
         });
 
@@ -77,11 +85,13 @@ export function PublicVoteShareCard({
     const anchor = document.createElement("a");
 
     anchor.href = url;
-    anchor.download = "casa-voting-qr.svg";
+
+    anchor.download = `casa-vote-${electionId}-qr.svg`;
 
     document.body.appendChild(anchor);
 
     anchor.click();
+
     anchor.remove();
 
     URL.revokeObjectURL(url);
@@ -104,6 +114,10 @@ export function PublicVoteShareCard({
 
       <CardBody>
         <div className="public-share-layout">
+          {/* =========================
+              LINK + ACTIONS
+              ========================= */}
+
           <div className="public-share-info">
             <div>
               <span className="public-share-label">
@@ -158,13 +172,23 @@ export function PublicVoteShareCard({
             </div>
           </div>
 
+          {/* =========================
+              QR CODE
+              ========================= */}
+
           <div className="public-share-qr">
             <div ref={qrContainerRef} className="public-share-qr-code">
               <QRCodeSVG
                 value={publicVoteUrl}
-                size={180}
+                size={200}
                 level="H"
-                marginSize={2}
+                includeMargin
+                imageSettings={{
+                  src: casaLogo,
+                  width: 40,
+                  height: 40,
+                  excavate: true,
+                }}
               />
             </div>
 

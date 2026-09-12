@@ -7954,14 +7954,24 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .public-share-qr-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   padding: 14px;
-  background: #fff;
+
+  background: #ffffff;
+
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 14px;
+}
+
+.public-share-qr-code svg {
+  display: block;
 }
 
 @media (max-width: 760px) {
@@ -7975,6 +7985,16 @@ button:disabled {
 
   .public-share-actions {
     width: 100%;
+    flex-direction: column;
+  }
+
+  .public-share-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .public-share-url {
+    max-width: 100%;
   }
 }
 
