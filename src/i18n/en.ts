@@ -1141,6 +1141,9 @@ const en = {
 
         exportRawJson:
             "Download Raw Votes",
+
+        exportAfterClose:
+            "Excel and raw vote data can be exported after the election has ended.",
     },
     users: {
         management:

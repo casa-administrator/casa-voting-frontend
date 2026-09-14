@@ -7998,6 +7998,13 @@ button:disabled {
   }
 }
 
+.admin-result-export-note {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
 
 @media (max-width: 640px) {
   .result-visibility-controls {

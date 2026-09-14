@@ -1,11 +1,4 @@
-import {
-  ArrowLeft,
-  BarChart3,
-  RefreshCw,
-  Trophy,
-  Users,
-  Vote,
-} from "lucide-react";
+import { ArrowLeft, BarChart3, Trophy, Users, Vote } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -31,6 +24,61 @@ import { formatDateTime, normalizeLanguage } from "../../utils/dateTime";
 
 import { electionStatusTone, formatElectionStatus } from "../../utils/election";
 
+const RESULTS_REFRESH_INTERVAL = 3 * 60 * 1000;
+
+const RESULTS_CACHE_PREFIX = "casa-public-results";
+
+interface CachedResults {
+  fetchedAt: number;
+  result: ElectionResult;
+}
+
+function getResultsCacheKey(electionId: string) {
+  return `${RESULTS_CACHE_PREFIX}:` + electionId;
+}
+
+function readCachedResults(electionId: string): CachedResults | null {
+  try {
+    const value = localStorage.getItem(getResultsCacheKey(electionId));
+
+    if (!value) {
+      return null;
+    }
+
+    const parsed = JSON.parse(value) as CachedResults;
+
+    if (!parsed || typeof parsed.fetchedAt !== "number" || !parsed.result) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedResults(electionId: string, result: ElectionResult) {
+  try {
+    localStorage.setItem(
+      getResultsCacheKey(electionId),
+      JSON.stringify({
+        fetchedAt: Date.now(),
+        result,
+      }),
+    );
+  } catch {
+    // Ignore storage failure.
+  }
+}
+
+function clearCachedResults(electionId: string) {
+  try {
+    localStorage.removeItem(getResultsCacheKey(electionId));
+  } catch {
+    // Ignore storage failure.
+  }
+}
+
 export function ResultsPage() {
   const { electionId } = useParams();
 
@@ -40,8 +88,6 @@ export function ResultsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
   const [unavailableMessage, setUnavailableMessage] = useState<string | null>(
     null,
   );
@@ -50,8 +96,8 @@ export function ResultsPage() {
 
   const language = normalizeLanguage(i18n.language);
 
-  const loadResults = useCallback(
-    async (initial = false) => {
+  const fetchLatestResults = useCallback(
+    async (background = false) => {
       if (!electionId) {
         setErrorMessage(t("publicResults.missingElectionId"));
 
@@ -60,14 +106,12 @@ export function ResultsPage() {
         return;
       }
 
-      if (!initial) {
-        setIsRefreshing(true);
-      }
-
       try {
         const response = await getPublicResults(electionId);
 
         setResult(response);
+
+        saveCachedResults(electionId, response);
 
         setUnavailableMessage(null);
 
@@ -75,54 +119,130 @@ export function ResultsPage() {
       } catch (error) {
         if (error instanceof ApiError) {
           if (error.status === 403) {
+            clearCachedResults(electionId);
+
             setUnavailableMessage(translateResultError(error, t));
 
             setResult(null);
 
             setErrorMessage(null);
           } else if (error.status === 404) {
+            clearCachedResults(electionId);
+
+            setResult(null);
+
             setErrorMessage(t("publicResults.electionNotFound"));
-          } else {
+          } else if (!background) {
             setErrorMessage(translateResultError(error, t));
           }
-        } else {
+        } else if (!background) {
           setErrorMessage(t("publicResults.loadError"));
         }
       } finally {
-        if (initial) {
-          setIsLoading(false);
-        }
-
-        setIsRefreshing(false);
+        setIsLoading(false);
       }
     },
     [electionId, t],
   );
 
-  useEffect(() => {
-    void loadResults(true);
-  }, [loadResults]);
-
   /*
-   * Live public results refresh every
-   * five seconds.
+   * Initial page load.
+   *
+   * A browser refresh does NOT immediately
+   * fetch newer results if the cached result
+   * is still less than 3 minutes old.
    */
   useEffect(() => {
-    if (result?.status !== "live" || result.result_visibility !== "live") {
+    if (!electionId) {
+      setErrorMessage(t("publicResults.missingElectionId"));
+
+      setIsLoading(false);
+
       return;
     }
 
-    const interval = window.setInterval(
-      () => {
-        void loadResults();
-      },
-      3 * 60 * 1000,
-    );
+    const cached = readCachedResults(electionId);
+
+    if (cached) {
+      const age = Date.now() - cached.fetchedAt;
+
+      if (age < RESULTS_REFRESH_INTERVAL) {
+        setResult(cached.result);
+
+        setUnavailableMessage(null);
+
+        setErrorMessage(null);
+
+        setIsLoading(false);
+
+        return;
+      }
+    }
+
+    void fetchLatestResults(false);
+  }, [electionId, fetchLatestResults, t]);
+
+  /*
+   * While public live results are enabled,
+   * refresh automatically every 3 minutes.
+   *
+   * The first refresh respects the timestamp
+   * of the current cached snapshot.
+   */
+  useEffect(() => {
+    if (
+      !electionId ||
+      result?.status !== "live" ||
+      result.result_visibility !== "live"
+    ) {
+      return;
+    }
+
+    let timer: number | undefined;
+
+    let cancelled = false;
+
+    const scheduleNextRefresh = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const cached = readCachedResults(electionId);
+
+      const fetchedAt = cached?.fetchedAt ?? Date.now();
+
+      const elapsed = Date.now() - fetchedAt;
+
+      const delay = Math.max(1000, RESULTS_REFRESH_INTERVAL - elapsed);
+
+      timer = window.setTimeout(async () => {
+        if (cancelled) {
+          return;
+        }
+
+        await fetchLatestResults(true);
+
+        if (!cancelled) {
+          scheduleNextRefresh();
+        }
+      }, delay);
+    };
+
+    scheduleNextRefresh();
 
     return () => {
-      window.clearInterval(interval);
+      cancelled = true;
+
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
     };
-  }, [result?.status, result?.result_visibility, loadResults]);
+  }, [
+    electionId,
+    result?.status,
+    result?.result_visibility,
+    fetchLatestResults,
+  ]);
 
   const leader = useMemo(() => {
     if (!result || result.candidates.length === 0) {
@@ -194,19 +314,6 @@ export function ResultsPage() {
               date: formatDateTime(result.calculated_at, language),
             })}
           </span>
-
-          <button
-            type="button"
-            className="ui-button ui-button-secondary ui-button-sm"
-            onClick={() => void loadResults(false)}
-            disabled={isRefreshing}
-          >
-            <RefreshCw size={14} />
-
-            {isRefreshing
-              ? t("publicResults.refreshing")
-              : t("publicResults.refresh")}
-          </button>
         </div>
       </div>
 
@@ -423,7 +530,7 @@ function candidateName(candidate: {
 
   last_name: string;
 }) {
-  return [candidate.title, candidate.first_name, candidate.last_name]
+  return [candidate.title, candidate.last_name, candidate.first_name]
     .filter(Boolean)
     .join(" ");
 }

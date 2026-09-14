@@ -49,6 +49,9 @@ export function AdminElectionResultsPage() {
 
   const language = normalizeLanguage(i18n.language);
 
+  const canExport =
+    result?.status === "closed" || result?.status === "archived";
+
   const loadResults = useCallback(
     async (initial = false) => {
       if (!electionId) {
@@ -234,13 +237,20 @@ export function AdminElectionResultsPage() {
               <h2>{t("adminResults.exportTitle")}</h2>
 
               <p>{t("adminResults.exportDescription")}</p>
+
+              {!canExport && (
+                <p className="admin-result-export-note">
+                  {t("adminResults.exportAfterClose")}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="admin-result-export-actions">
             <Button
+              type="button"
               variant="secondary"
-              disabled={exporting !== null}
+              disabled={!canExport || exporting !== null}
               onClick={() => void handleExport("excel")}
             >
               <FileSpreadsheet size={16} />
@@ -251,8 +261,9 @@ export function AdminElectionResultsPage() {
             </Button>
 
             <Button
+              type="button"
               variant="secondary"
-              disabled={exporting !== null}
+              disabled={!canExport || exporting !== null}
               onClick={() => void handleExport("pdf")}
             >
               <FileText size={16} />
@@ -261,11 +272,12 @@ export function AdminElectionResultsPage() {
                 ? t("adminResults.exporting")
                 : t("adminResults.exportPdf")}
             </Button>
+
             <Button
               type="button"
               variant="secondary"
+              disabled={!canExport || exporting !== null}
               onClick={() => void handleExport("json")}
-              disabled={exporting !== null}
             >
               <FileJson size={16} />
 
