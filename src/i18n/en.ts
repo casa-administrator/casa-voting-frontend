@@ -1820,6 +1820,12 @@ const en = {
         shareText:
             "Open the CASA Voting System to cast your vote.",
     },
+    countdown: {
+        remaining: "Voting time remaining",
+        status: "Voting status",
+        ended: "Voting has ended",
+        dayShort: "d",
+    },
   },
 };
 

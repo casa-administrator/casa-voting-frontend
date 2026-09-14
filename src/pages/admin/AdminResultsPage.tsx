@@ -28,8 +28,6 @@ import {
   formatResultVisibility,
 } from "../../utils/election";
 
-const RESULTS_REFRESH_INTERVAL = 3 * 60 * 1000;
-
 export function AdminResultsPage() {
   const { t, i18n } = useTranslation();
 
@@ -41,8 +39,47 @@ export function AdminResultsPage() {
 
   const language = normalizeLanguage(i18n.language);
 
+  const RESULTS_REFRESH_INTERVAL = 2 * 60 * 1000;
+
+  const ADMIN_RESULTS_CACHE_KEY = "casa-admin-results-list";
+
+  interface CachedAdminResultsList {
+    fetchedAt: number;
+    elections: Election[];
+  }
+
+  function readAdminResultsCache(): CachedAdminResultsList | null {
+    try {
+      const raw = sessionStorage.getItem(ADMIN_RESULTS_CACHE_KEY);
+
+      if (!raw) {
+        return null;
+      }
+
+      return JSON.parse(raw) as CachedAdminResultsList;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveAdminResultsCache(elections: Election[]) {
+    try {
+      sessionStorage.setItem(
+        ADMIN_RESULTS_CACHE_KEY,
+        JSON.stringify({
+          fetchedAt: Date.now(),
+          elections,
+        }),
+      );
+    } catch {
+      // Ignore storage failure.
+    }
+  }
+
   useEffect(() => {
     let active = true;
+
+    let timer: number | undefined;
 
     async function load(showInitialLoading = false) {
       if (showInitialLoading) {
@@ -52,7 +89,6 @@ export function AdminResultsPage() {
       try {
         const response = await getElections({
           page: 1,
-
           perPage: 100,
         });
 
@@ -61,6 +97,8 @@ export function AdminResultsPage() {
         }
 
         setElections(response.items);
+
+        saveAdminResultsCache(response.items);
 
         setErrorMessage(null);
       } catch (error) {
@@ -81,26 +119,65 @@ export function AdminResultsPage() {
     }
 
     /*
-     * First page load:
-     * fetch immediately.
+     * Initial load:
+     * use cached data if it is
+     * less than 3 minutes old.
      */
-    void load(true);
+    const cached = readAdminResultsCache();
+
+    if (cached) {
+      const age = Date.now() - cached.fetchedAt;
+
+      if (age < RESULTS_REFRESH_INTERVAL) {
+        setElections(cached.elections);
+
+        setIsLoading(false);
+      } else {
+        void load(true);
+      }
+    } else {
+      void load(true);
+    }
 
     /*
-     * Automatic refresh:
-     * every 3 minutes.
+     * Schedule refresh based on
+     * the last real API fetch.
      *
-     * We do not show the loading screen
-     * again during background refresh.
+     * Browser F5 does not reset
+     * the 3-minute timer.
      */
-    const intervalId = window.setInterval(() => {
-      void load(false);
-    }, RESULTS_REFRESH_INTERVAL);
+    function scheduleNextRefresh() {
+      if (!active) {
+        return;
+      }
+
+      const currentCache = readAdminResultsCache();
+
+      const fetchedAt = currentCache?.fetchedAt ?? Date.now();
+
+      const elapsed = Date.now() - fetchedAt;
+
+      const delay = Math.max(1000, RESULTS_REFRESH_INTERVAL - elapsed);
+
+      timer = window.setTimeout(async () => {
+        if (!active) {
+          return;
+        }
+
+        await load(false);
+
+        scheduleNextRefresh();
+      }, delay);
+    }
+
+    scheduleNextRefresh();
 
     return () => {
       active = false;
 
-      window.clearInterval(intervalId);
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
     };
   }, [t]);
 

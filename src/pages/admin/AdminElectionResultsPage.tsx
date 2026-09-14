@@ -2,33 +2,116 @@ import {
   ArrowLeft,
   BarChart3,
   Download,
+  FileJson,
   FileSpreadsheet,
   FileText,
-  FileJson,
   Users,
   Vote,
 } from "lucide-react";
+
 import { useCallback, useEffect, useState } from "react";
+
 import { useParams } from "react-router-dom";
+
 import { useTranslation } from "react-i18next";
+
 import { ApiError } from "../../api/client";
+
 import {
   exportElectionResultsExcel,
-  getAdminResults,
   exportRawVotesJson,
+  getAdminResults,
 } from "../../api/results";
+
 import { useAuth } from "../../auth/useAuth";
+
 import { Button, ButtonLink } from "../../components/ui/Button";
+
 import { EmptyState } from "../../components/ui/EmptyState";
+
 import { PageHeader } from "../../components/ui/PageHeader";
+
 import { StatCard } from "../../components/ui/StatCard";
+
 import { StatusBadge } from "../../components/ui/StatusBadge";
+
 import type { CandidateResult, ElectionResult } from "../../types/results";
+
 import { formatDateTime, normalizeLanguage } from "../../utils/dateTime";
+
 import { saveBlob } from "../../utils/download";
+
 import { electionStatusTone, formatElectionStatus } from "../../utils/election";
 
+import {
+  RESULTS_REFRESH_INTERVAL,
+  getNextResultsRefreshDelay,
+} from "../../utils/resultRefresh";
+
 type ExportType = "excel" | "pdf" | "json" | null;
+
+const ADMIN_RESULT_CACHE_PREFIX = "casa-admin-election-result";
+
+interface CachedAdminResult {
+  fetchedAt: number;
+  result: ElectionResult;
+}
+
+function getAdminResultCacheKey(electionId: string) {
+  return `${ADMIN_RESULT_CACHE_PREFIX}:` + electionId;
+}
+
+function readAdminResultCache(electionId: string): CachedAdminResult | null {
+  try {
+    const raw = sessionStorage.getItem(getAdminResultCacheKey(electionId));
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as CachedAdminResult;
+
+    if (!parsed || typeof parsed.fetchedAt !== "number" || !parsed.result) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveAdminResultCache(electionId: string, result: ElectionResult) {
+  try {
+    sessionStorage.setItem(
+      getAdminResultCacheKey(electionId),
+      JSON.stringify({
+        fetchedAt: Date.now(),
+        result,
+      }),
+    );
+  } catch {
+    // Ignore sessionStorage failure.
+  }
+}
+
+/*
+ * Cached result is valid only inside
+ * the current synchronized 2-minute
+ * refresh window.
+ *
+ * Example:
+ *
+ * 14:00:00 - 14:01:59
+ * 14:02:00 - 14:03:59
+ */
+function isCacheCurrentWindow(fetchedAt: number) {
+  const currentWindow = Math.floor(Date.now() / RESULTS_REFRESH_INTERVAL);
+
+  const cachedWindow = Math.floor(fetchedAt / RESULTS_REFRESH_INTERVAL);
+
+  return currentWindow === cachedWindow;
+}
 
 export function AdminElectionResultsPage() {
   const { electionId } = useParams();
@@ -41,8 +124,6 @@ export function AdminElectionResultsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const [, setIsRefreshing] = useState(false);
-
   const [exporting, setExporting] = useState<ExportType>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -52,8 +133,12 @@ export function AdminElectionResultsPage() {
   const canExport =
     result?.status === "closed" || result?.status === "archived";
 
-  const loadResults = useCallback(
-    async (initial = false) => {
+  /*
+   * Fetch latest admin result
+   * directly from API.
+   */
+  const fetchLatestResults = useCallback(
+    async (background = false) => {
       if (!electionId) {
         setErrorMessage(t("adminResults.missingElectionId"));
 
@@ -62,39 +147,134 @@ export function AdminElectionResultsPage() {
         return;
       }
 
-      if (!initial) {
-        setIsRefreshing(true);
-      }
+      const currentElectionId = electionId;
 
       try {
-        const response = await getAdminResults(electionId);
+        const response = await getAdminResults(currentElectionId);
 
         setResult(response);
 
+        saveAdminResultCache(currentElectionId, response);
+
         setErrorMessage(null);
       } catch (error) {
-        setErrorMessage(
-          error instanceof ApiError
-            ? error.message
-            : t("adminResults.loadResultError"),
-        );
-      } finally {
-        if (initial) {
-          setIsLoading(false);
+        if (!background) {
+          setErrorMessage(
+            error instanceof ApiError
+              ? error.message
+              : t("adminResults.loadResultError"),
+          );
         }
-
-        setIsRefreshing(false);
+      } finally {
+        setIsLoading(false);
       }
     },
     [electionId, t],
   );
 
+  /*
+   * INITIAL LOAD
+   *
+   * Browser F5 does not force a new
+   * result request during the same
+   * synchronized 2-minute window.
+   */
   useEffect(() => {
-    void loadResults(true);
-  }, [loadResults]);
+    if (!electionId) {
+      setErrorMessage(t("adminResults.missingElectionId"));
+
+      setIsLoading(false);
+
+      return;
+    }
+
+    const currentElectionId = electionId;
+
+    const cached = readAdminResultCache(currentElectionId);
+
+    if (cached && isCacheCurrentWindow(cached.fetchedAt)) {
+      setResult(cached.result);
+
+      setErrorMessage(null);
+
+      setIsLoading(false);
+
+      return;
+    }
+
+    void fetchLatestResults(false);
+  }, [electionId, fetchLatestResults, t]);
+
+  /*
+   * SYNCHRONIZED ADMIN RESULT REFRESH
+   *
+   * Uses the exact same global
+   * 2-minute boundaries as public:
+   *
+   * 14:00
+   * 14:02
+   * 14:04
+   * 14:06
+   *
+   * Page opening time does not control
+   * the automatic refresh schedule.
+   */
+  useEffect(() => {
+    if (!electionId || result?.status !== "live") {
+      return;
+    }
+
+    let firstTimer: number | undefined;
+
+    let intervalTimer: number | undefined;
+
+    let cancelled = false;
+
+    async function refresh() {
+      if (cancelled) {
+        return;
+      }
+
+      await fetchLatestResults(true);
+    }
+
+    const delay = getNextResultsRefreshDelay();
+
+    /*
+     * First refresh waits for the
+     * next global 2-minute boundary.
+     */
+    firstTimer = window.setTimeout(async () => {
+      await refresh();
+
+      if (cancelled) {
+        return;
+      }
+
+      /*
+       * Continue every 2 minutes
+       * from that synchronized point.
+       */
+      intervalTimer = window.setInterval(() => {
+        void refresh();
+      }, RESULTS_REFRESH_INTERVAL);
+    }, delay);
+
+    return () => {
+      cancelled = true;
+
+      if (firstTimer !== undefined) {
+        window.clearTimeout(firstTimer);
+      }
+
+      if (intervalTimer !== undefined) {
+        window.clearInterval(intervalTimer);
+      }
+    };
+  }, [electionId, result?.status, fetchLatestResults]);
 
   async function handleExport(type: "excel" | "pdf" | "json") {
-    if (!electionId || exporting) {
+    if (!electionId || exporting || !canExport) {
       return;
     }
 
@@ -162,13 +342,11 @@ export function AdminElectionResultsPage() {
         title={result.title}
         description={t("adminResults.resultDescription")}
         actions={
-          <>
-            <ButtonLink to="/admin/results" variant="secondary">
-              <ArrowLeft size={15} />
+          <ButtonLink to="/admin/results" variant="secondary">
+            <ArrowLeft size={15} />
 
-              {t("common.back")}
-            </ButtonLink>
-          </>
+            {t("common.back")}
+          </ButtonLink>
         }
       />
 
@@ -327,7 +505,6 @@ function AdminCandidateResult({
   rank,
 }: {
   candidate: CandidateResult;
-
   rank: number;
 }) {
   const { t } = useTranslation();
@@ -381,12 +558,10 @@ function AdminCandidateResult({
 
 function candidateName(candidate: {
   title: string | null;
-
   first_name: string;
-
   last_name: string;
 }) {
-  return [candidate.title, candidate.first_name, candidate.last_name]
+  return [candidate.title, candidate.last_name, candidate.first_name]
     .filter(Boolean)
     .join(" ");
 }

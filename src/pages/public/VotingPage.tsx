@@ -28,6 +28,8 @@ import type {
 
 import { formatDateTime, normalizeLanguage } from "../../utils/dateTime";
 
+import { ElectionCountdown } from "../../components/ElectionCountdown";
+
 export function VotingPage() {
   const { electionId } = useParams();
 
@@ -311,6 +313,10 @@ export function VotingPage() {
 
           {election.description && <p>{election.description}</p>}
         </div>
+
+        {election.status === "live" && (
+          <ElectionCountdown endAt={election.end_at} />
+        )}
       </section>
 
       <div className="voting-rules-banner">

@@ -10,7 +10,11 @@ import type { TFunction } from "i18next";
 
 import { ApiError } from "../../api/client";
 
+import { getPublicElection } from "../../api/public";
+
 import { getPublicResults } from "../../api/results";
+
+import { ElectionCountdown } from "../../components/ElectionCountdown";
 
 import { EmptyState } from "../../components/ui/EmptyState";
 
@@ -18,13 +22,18 @@ import { StatCard } from "../../components/ui/StatCard";
 
 import { StatusBadge } from "../../components/ui/StatusBadge";
 
+import type { PublicElection } from "../../types/public";
+
 import type { CandidateResult, ElectionResult } from "../../types/results";
 
 import { formatDateTime, normalizeLanguage } from "../../utils/dateTime";
 
 import { electionStatusTone, formatElectionStatus } from "../../utils/election";
 
-const RESULTS_REFRESH_INTERVAL = 3 * 60 * 1000;
+import {
+  RESULTS_REFRESH_INTERVAL,
+  getNextResultsRefreshDelay,
+} from "../../utils/resultRefresh";
 
 const RESULTS_CACHE_PREFIX = "casa-public-results";
 
@@ -67,7 +76,7 @@ function saveCachedResults(electionId: string, result: ElectionResult) {
       }),
     );
   } catch {
-    // Ignore storage failure.
+    // Ignore localStorage failure.
   }
 }
 
@@ -75,14 +84,36 @@ function clearCachedResults(electionId: string) {
   try {
     localStorage.removeItem(getResultsCacheKey(electionId));
   } catch {
-    // Ignore storage failure.
+    // Ignore localStorage failure.
   }
+}
+
+/*
+ * A cached result is valid only inside
+ * the current synchronized 2-minute window.
+ *
+ * Example:
+ *
+ * 14:00:00 - 14:01:59 = one window
+ * 14:02:00 - 14:03:59 = next window
+ *
+ * This prevents browser refresh from
+ * bypassing the synchronized schedule.
+ */
+function isCacheCurrentWindow(fetchedAt: number) {
+  const currentWindow = Math.floor(Date.now() / RESULTS_REFRESH_INTERVAL);
+
+  const cachedWindow = Math.floor(fetchedAt / RESULTS_REFRESH_INTERVAL);
+
+  return currentWindow === cachedWindow;
 }
 
 export function ResultsPage() {
   const { electionId } = useParams();
 
   const { t, i18n } = useTranslation();
+
+  const [election, setElection] = useState<PublicElection | null>(null);
 
   const [result, setResult] = useState<ElectionResult | null>(null);
 
@@ -96,6 +127,50 @@ export function ResultsPage() {
 
   const language = normalizeLanguage(i18n.language);
 
+  /*
+   * Load election metadata.
+   *
+   * Required for:
+   * - end_at
+   * - countdown
+   */
+  useEffect(() => {
+    if (!electionId) {
+      return;
+    }
+
+    const currentElectionId = electionId;
+
+    let active = true;
+
+    async function loadElection() {
+      try {
+        const response = await getPublicElection(currentElectionId);
+
+        if (!active) {
+          return;
+        }
+
+        setElection(response);
+      } catch {
+        /*
+         * Results can still display
+         * if metadata fails.
+         */
+      }
+    }
+
+    void loadElection();
+
+    return () => {
+      active = false;
+    };
+  }, [electionId]);
+
+  /*
+   * Fetch latest public result
+   * from backend.
+   */
   const fetchLatestResults = useCallback(
     async (background = false) => {
       if (!electionId) {
@@ -106,12 +181,14 @@ export function ResultsPage() {
         return;
       }
 
+      const currentElectionId = electionId;
+
       try {
-        const response = await getPublicResults(electionId);
+        const response = await getPublicResults(currentElectionId);
 
         setResult(response);
 
-        saveCachedResults(electionId, response);
+        saveCachedResults(currentElectionId, response);
 
         setUnavailableMessage(null);
 
@@ -119,15 +196,15 @@ export function ResultsPage() {
       } catch (error) {
         if (error instanceof ApiError) {
           if (error.status === 403) {
-            clearCachedResults(electionId);
-
-            setUnavailableMessage(translateResultError(error, t));
+            clearCachedResults(currentElectionId);
 
             setResult(null);
 
+            setUnavailableMessage(translateResultError(error, t));
+
             setErrorMessage(null);
           } else if (error.status === 404) {
-            clearCachedResults(electionId);
+            clearCachedResults(currentElectionId);
 
             setResult(null);
 
@@ -146,11 +223,11 @@ export function ResultsPage() {
   );
 
   /*
-   * Initial page load.
+   * Initial result load.
    *
-   * A browser refresh does NOT immediately
-   * fetch newer results if the cached result
-   * is still less than 3 minutes old.
+   * Browser F5 uses the cached result
+   * only when it belongs to the same
+   * synchronized 2-minute window.
    */
   useEffect(() => {
     if (!electionId) {
@@ -161,33 +238,40 @@ export function ResultsPage() {
       return;
     }
 
-    const cached = readCachedResults(electionId);
+    const currentElectionId = electionId;
 
-    if (cached) {
-      const age = Date.now() - cached.fetchedAt;
+    const cached = readCachedResults(currentElectionId);
 
-      if (age < RESULTS_REFRESH_INTERVAL) {
-        setResult(cached.result);
+    if (cached && isCacheCurrentWindow(cached.fetchedAt)) {
+      setResult(cached.result);
 
-        setUnavailableMessage(null);
+      setUnavailableMessage(null);
 
-        setErrorMessage(null);
+      setErrorMessage(null);
 
-        setIsLoading(false);
+      setIsLoading(false);
 
-        return;
-      }
+      return;
     }
 
     void fetchLatestResults(false);
   }, [electionId, fetchLatestResults, t]);
 
   /*
-   * While public live results are enabled,
-   * refresh automatically every 3 minutes.
+   * SYNCHRONIZED PUBLIC RESULT REFRESH
    *
-   * The first refresh respects the timestamp
-   * of the current cached snapshot.
+   * Public and Admin both refresh on
+   * the same global 2-minute boundaries.
+   *
+   * Example:
+   *
+   * 14:00
+   * 14:02
+   * 14:04
+   * 14:06
+   *
+   * It does NOT depend on when the page
+   * was opened.
    */
   useEffect(() => {
     if (
@@ -198,43 +282,52 @@ export function ResultsPage() {
       return;
     }
 
-    let timer: number | undefined;
+    let firstTimer: number | undefined;
+
+    let intervalTimer: number | undefined;
 
     let cancelled = false;
 
-    const scheduleNextRefresh = () => {
+    async function refresh() {
       if (cancelled) {
         return;
       }
 
-      const cached = readCachedResults(electionId);
+      await fetchLatestResults(true);
+    }
 
-      const fetchedAt = cached?.fetchedAt ?? Date.now();
+    const delay = getNextResultsRefreshDelay();
 
-      const elapsed = Date.now() - fetchedAt;
+    /*
+     * Wait until next global
+     * 2-minute boundary.
+     */
+    firstTimer = window.setTimeout(async () => {
+      await refresh();
 
-      const delay = Math.max(1000, RESULTS_REFRESH_INTERVAL - elapsed);
+      if (cancelled) {
+        return;
+      }
 
-      timer = window.setTimeout(async () => {
-        if (cancelled) {
-          return;
-        }
-
-        await fetchLatestResults(true);
-
-        if (!cancelled) {
-          scheduleNextRefresh();
-        }
-      }, delay);
-    };
-
-    scheduleNextRefresh();
+      /*
+       * From this point onward both
+       * Admin and Public run exactly
+       * every 2 minutes.
+       */
+      intervalTimer = window.setInterval(() => {
+        void refresh();
+      }, RESULTS_REFRESH_INTERVAL);
+    }, delay);
 
     return () => {
       cancelled = true;
 
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
+      if (firstTimer !== undefined) {
+        window.clearTimeout(firstTimer);
+      }
+
+      if (intervalTimer !== undefined) {
+        window.clearInterval(intervalTimer);
       }
     };
   }, [
@@ -308,8 +401,12 @@ export function ResultsPage() {
           </div>
         </div>
 
-        <div className="public-results-refresh">
-          <span>
+        <div className="public-results-side">
+          {result.status === "live" && election?.end_at && (
+            <ElectionCountdown endAt={election.end_at} />
+          )}
+
+          <span className="public-results-updated">
             {t("publicResults.updatedAt", {
               date: formatDateTime(result.calculated_at, language),
             })}
@@ -437,9 +534,7 @@ function CandidateResultRow({
   totalBallots,
 }: {
   candidate: CandidateResult;
-
   rank: number;
-
   totalBallots: number;
 }) {
   const { t } = useTranslation();
@@ -525,9 +620,7 @@ function ResultsUnavailable({ message }: { message: string }) {
 
 function candidateName(candidate: {
   title: string | null;
-
   first_name: string;
-
   last_name: string;
 }) {
   return [candidate.title, candidate.last_name, candidate.first_name]
