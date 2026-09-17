@@ -1,38 +1,34 @@
-import { Plus, Pencil, Power, PowerOff, Trash2 } from "lucide-react";
-
+import {
+  ImagePlus,
+  Pencil,
+  Plus,
+  Power,
+  PowerOff,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-
-import type { SubmitEventHandler } from "react";
-
+import type { ChangeEvent, SubmitEventHandler } from "react";
 import { useTranslation } from "react-i18next";
-
 import { ApiError } from "../../api/client";
-
 import {
   activateCandidate,
   createCandidate,
   deactivateCandidate,
   deleteCandidate,
+  deleteCandidateImage,
   getCandidates,
   updateCandidate,
+  uploadCandidateImage,
 } from "../../api/candidates";
-
 import { useAuth } from "../../auth/useAuth";
-
 import { Button } from "../../components/ui/Button";
-
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-
 import { DataTable } from "../../components/ui/DataTable";
-
 import { EmptyState } from "../../components/ui/EmptyState";
-
 import { FormField } from "../../components/ui/FormField";
-
 import { StatusBadge } from "../../components/ui/StatusBadge";
-
 import type { Candidate } from "../../types/candidates";
-
 import type { ElectionStatus } from "../../types/elections";
 
 interface CandidateManagerProps {
@@ -335,6 +331,10 @@ export function CandidateManager({
   );
 }
 
+const CANDIDATE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+
+const CANDIDATE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 function CandidateForm({
   electionId,
   candidate,
@@ -365,17 +365,94 @@ function CandidateForm({
 
   const [description, setDescription] = useState(candidate?.description ?? "");
 
-  const [imageUrl, setImageUrl] = useState(candidate?.image_url ?? "");
-
   const [displayOrder, setDisplayOrder] = useState(
     candidate?.display_order ?? candidateNumber,
   );
 
   const [isActive, setIsActive] = useState(candidate?.is_active ?? true);
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const [imageObjectUrl, setImageObjectUrl] = useState<string | null>(null);
+
+  const [removeExistingImage, setRemoveExistingImage] = useState(false);
+
+  /*
+   * If candidate creation succeeds but image upload fails,
+   * keep the created candidate ID.
+   *
+   * Retrying the form will update the same candidate instead
+   * of creating a duplicate candidate.
+   */
+  const [createdCandidateId, setCreatedCandidateId] = useState<string | null>(
+    null,
+  );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const previewUrl =
+    imageObjectUrl ??
+    (removeExistingImage ? null : (candidate?.image_url ?? null));
+
+  useEffect(() => {
+    return () => {
+      if (imageObjectUrl) {
+        URL.revokeObjectURL(imageObjectUrl);
+      }
+    };
+  }, [imageObjectUrl]);
+
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+
+    /*
+     * Reset the native file input so the same file
+     * can be selected again later if needed.
+     */
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!CANDIDATE_IMAGE_TYPES.includes(file.type)) {
+      setErrorMessage(t("candidates.imageTypeError"));
+
+      return;
+    }
+
+    if (file.size > CANDIDATE_IMAGE_MAX_BYTES) {
+      setErrorMessage(t("candidates.imageSizeError"));
+
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    setImageFile(file);
+
+    setImageObjectUrl(objectUrl);
+
+    setRemoveExistingImage(false);
+
+    setErrorMessage(null);
+  }
+
+  function handleRemoveImage() {
+    setImageFile(null);
+
+    setImageObjectUrl(null);
+
+    /*
+     * Only call the DELETE endpoint if this candidate
+     * already had a stored image.
+     */
+    setRemoveExistingImage(Boolean(candidate?.image_url));
+
+    setErrorMessage(null);
+  }
 
   const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
@@ -389,44 +466,46 @@ function CandidateForm({
     setErrorMessage(null);
 
     try {
-      if (candidate) {
-        await updateCandidate(candidate.id, {
-          candidate_number: candidateNumber,
+      let targetCandidateId = candidate?.id ?? createdCandidateId;
 
-          title: title.trim() || null,
+      const candidatePayload = {
+        candidate_number: candidateNumber,
 
-          first_name: firstName.trim(),
+        title: title.trim() || null,
 
-          last_name: lastName.trim(),
+        first_name: firstName.trim(),
 
-          from: candidateFrom.trim() || null,
+        last_name: lastName.trim(),
 
-          description: description.trim() || null,
+        from: candidateFrom.trim() || null,
 
-          image_url: imageUrl.trim() || null,
+        description: description.trim() || null,
 
-          display_order: displayOrder,
-        });
+        display_order: displayOrder,
+      };
+
+      if (targetCandidateId) {
+        await updateCandidate(targetCandidateId, candidatePayload);
       } else {
-        await createCandidate(electionId, {
-          candidate_number: candidateNumber,
-
-          title: title.trim() || null,
-
-          first_name: firstName.trim(),
-
-          last_name: lastName.trim(),
-
-          from: candidateFrom.trim() || null,
-
-          description: description.trim() || null,
-
-          image_url: imageUrl.trim() || null,
-
-          display_order: displayOrder,
+        const created = await createCandidate(electionId, {
+          ...candidatePayload,
 
           is_active: isActive,
         });
+
+        targetCandidateId = created.id;
+
+        setCreatedCandidateId(created.id);
+      }
+
+      /*
+       * Image actions happen after the candidate
+       * itself exists.
+       */
+      if (imageFile) {
+        await uploadCandidateImage(targetCandidateId, imageFile);
+      } else if (removeExistingImage && candidate?.image_url) {
+        await deleteCandidateImage(targetCandidateId);
       }
 
       await onSaved();
@@ -521,15 +600,68 @@ function CandidateForm({
           />
         </FormField>
 
-        <FormField label={t("candidates.imageUrl")} full>
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(event) => setImageUrl(event.target.value)}
-          />
-        </FormField>
+        <div className="form-field form-field-full">
+          <span className="form-label">{t("candidates.candidatePhoto")}</span>
 
-        {!candidate && (
+          <div className="candidate-image-editor">
+            <div className="candidate-image-preview">
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt={
+                    candidate
+                      ? candidateName(candidate)
+                      : t("candidates.candidatePhoto")
+                  }
+                />
+              ) : (
+                <div className="candidate-image-placeholder">
+                  <ImagePlus size={28} strokeWidth={1.7} />
+
+                  <span>{t("candidates.noPhoto")}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="candidate-image-controls">
+              <label className="candidate-image-upload">
+                <Upload size={15} />
+
+                <span>
+                  {previewUrl
+                    ? t("candidates.replacePhoto")
+                    : t("candidates.choosePhoto")}
+                </span>
+
+                <input
+                  className="candidate-image-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageChange}
+                />
+              </label>
+
+              {previewUrl && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  onClick={handleRemoveImage}
+                >
+                  <Trash2 size={14} />
+
+                  {t("candidates.removePhoto")}
+                </Button>
+              )}
+
+              <small className="candidate-image-help">
+                {t("candidates.imageHelp")}
+              </small>
+            </div>
+          </div>
+        </div>
+
+        {!candidate && !createdCandidateId && (
           <label className="candidate-active-option">
             <input
               type="checkbox"
@@ -553,14 +685,14 @@ function CandidateForm({
       )}
 
       <div className="form-actions">
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={onCancel} disabled={isSubmitting}>
           {t("common.cancel")}
         </Button>
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting
             ? t("candidates.saving")
-            : candidate
+            : candidate || createdCandidateId
               ? t("candidates.updateCandidate")
               : t("candidates.addCandidate")}
         </Button>

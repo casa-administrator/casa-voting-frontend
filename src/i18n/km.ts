@@ -548,8 +548,29 @@ const km = {
         descriptionLabel:
             "ការពិពណ៌នា",
 
-        imageUrl:
-            "តំណរូបភាព",
+        candidatePhoto:
+            "រូបថតបេក្ខជន",
+
+        choosePhoto:
+            "ជ្រើសរើសរូបថត",
+
+        replacePhoto:
+            "ប្តូររូបថត",
+
+        removePhoto:
+            "លុបរូបថត",
+
+        noPhoto:
+            "មិនទាន់មានរូបថត",
+
+        imageHelp:
+            "អនុញ្ញាត JPEG, PNG ឬ WebP ទំហំអតិបរមា 2 MB។",
+
+        imageTypeError:
+            "សូមជ្រើសរើសរូបភាព JPEG, PNG ឬ WebP ប៉ុណ្ណោះ។",
+
+        imageSizeError:
+            "ទំហំរូបថតបេក្ខជនមិនត្រូវលើស 2 MB។",
 
         activeCandidate:
             "បេក្ខជនសកម្ម",

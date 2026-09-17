@@ -456,12 +456,22 @@ export function ResultsPage() {
             <Trophy size={24} />
           </div>
 
-          <div className="result-leader-copy">
-            <span>{t("publicResults.currentLeader")}</span>
+          <div className="result-leader-person">
+            <div className="result-leader-photo">
+              {leader.image_url ? (
+                <img src={leader.image_url} alt={candidateName(leader)} />
+              ) : (
+                <span>{leader.candidate_number}</span>
+              )}
+            </div>
 
-            <h2>{candidateName(leader)}</h2>
+            <div className="result-leader-copy">
+              <span>{t("publicResults.currentLeader")}</span>
 
-            {leader.from && <p>{leader.from}</p>}
+              <h2>{candidateName(leader)}</h2>
+
+              {leader.from && <p>{leader.from}</p>}
+            </div>
           </div>
 
           <div className="leader-votes">
@@ -543,16 +553,26 @@ function CandidateResultRow({
     <article className="candidate-result-row">
       <div className="result-rank">{rank}</div>
 
-      <div className="result-candidate-info">
-        <span>
-          {t("publicResults.candidateNumber", {
-            number: candidate.candidate_number,
-          })}
-        </span>
+      <div className="result-candidate-main">
+        <div className="result-candidate-photo">
+          {candidate.image_url ? (
+            <img src={candidate.image_url} alt={candidateName(candidate)} />
+          ) : (
+            <span>{candidate.candidate_number}</span>
+          )}
+        </div>
 
-        <h3>{candidateName(candidate)}</h3>
+        <div className="result-candidate-info">
+          <span>
+            {t("publicResults.candidateNumber", {
+              number: candidate.candidate_number,
+            })}
+          </span>
 
-        {candidate.from && <p>{candidate.from}</p>}
+          <h3>{candidateName(candidate)}</h3>
+
+          {candidate.from && <p>{candidate.from}</p>}
+        </div>
       </div>
 
       <div className="result-progress-area">

@@ -550,8 +550,29 @@ const en = {
         descriptionLabel:
             "Description",
 
-        imageUrl:
-            "Image URL",
+        candidatePhoto:
+            "Candidate Photo",
+
+        choosePhoto:
+            "Choose Photo",
+
+        replacePhoto:
+            "Replace Photo",
+
+        removePhoto:
+            "Remove Photo",
+
+        noPhoto:
+            "No photo",
+
+        imageHelp:
+            "JPEG, PNG or WebP. Maximum file size 2 MB.",
+
+        imageTypeError:
+            "Please select a JPEG, PNG or WebP image.",
+
+        imageSizeError:
+            "Candidate photo must not exceed 2 MB.",
 
         activeCandidate:
             "Active Candidate",

@@ -11,6 +11,8 @@ export interface CandidateResult {
 
   from: string | null;
 
+  image_url: string | null;
+
   vote_count: number;
 
   ballot_percentage: number;

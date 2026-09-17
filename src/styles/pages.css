@@ -1366,6 +1366,228 @@
     10px;
 }
 
+
+.candidate-image-editor {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    18px;
+
+  padding:
+    16px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    var(--radius-sm);
+
+  background:
+    var(--surface);
+}
+
+
+.candidate-image-preview {
+  width:
+    112px;
+
+  height:
+    112px;
+
+  flex:
+    0 0
+    112px;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    14px;
+
+  background:
+    var(--surface-soft);
+}
+
+
+.candidate-image-preview img {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    block;
+
+  object-fit:
+    cover;
+}
+
+
+.candidate-image-placeholder {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  flex-direction:
+    column;
+
+  gap:
+    7px;
+
+  color:
+    var(--muted);
+
+  font-size:
+    10px;
+}
+
+
+.candidate-image-controls {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    9px;
+}
+
+
+.candidate-image-upload {
+  min-height:
+    34px;
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    7px;
+
+  padding:
+    7px 12px;
+
+  border:
+    1px solid
+    var(--border-strong);
+
+  border-radius:
+    var(--radius-sm);
+
+  background:
+    var(--surface);
+
+  color:
+    var(--text);
+
+  font-size:
+    11px;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+.candidate-image-upload:hover {
+  border-color:
+    var(--casa-500);
+
+  background:
+    var(--casa-50);
+}
+
+
+.candidate-image-input {
+  position:
+    absolute;
+
+  width:
+    1px;
+
+  height:
+    1px;
+
+  overflow:
+    hidden;
+
+  opacity:
+    0;
+}
+
+
+.candidate-image-help {
+  flex-basis:
+    100%;
+
+  color:
+    var(--muted);
+
+  font-size:
+    10px;
+}
+
+
+@media (max-width: 640px) {
+  .candidate-image-editor {
+    align-items:
+      stretch;
+
+    flex-direction:
+      column;
+  }
+
+  .candidate-image-preview {
+    width:
+      100%;
+
+    height:
+      220px;
+
+    flex-basis:
+      auto;
+  }
+}
+
 /* =========================================================
    ELECTION READINESS
    ========================================================= */
@@ -2649,19 +2871,13 @@
     relative;
 
   aspect-ratio:
-    4 / 3;
-
-  display:
-    grid;
-
-  place-items:
-    center;
+    3 / 4;
 
   overflow:
     hidden;
 
   background:
-    var(--casa-50);
+    #ffffff;
 }
 
 
@@ -2672,8 +2888,14 @@
   height:
     100%;
 
+  display:
+    block;
+
   object-fit:
-    cover;
+    contain;
+
+  object-position:
+    center;
 }
 
 
@@ -3134,6 +3356,278 @@
 
   font-size:
     10px;
+}
+
+/* =========================================================
+   RESULT CANDIDATE PHOTOS
+   ========================================================= */
+
+.result-leader-person {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    14px;
+}
+
+
+.result-leader-photo {
+  width:
+    72px;
+
+  height:
+    96px;
+
+  flex:
+    0 0
+    72px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    10px;
+
+  background:
+    #ffffff;
+
+  color:
+    var(--casa-700);
+
+  font-size:
+    24px;
+
+  font-weight:
+    800;
+}
+
+
+.result-leader-photo img {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    block;
+
+  object-fit:
+    contain;
+
+  object-position:
+    center;
+}
+
+
+.result-candidate-main {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    12px;
+}
+
+
+.result-candidate-photo {
+  width:
+    54px;
+
+  height:
+    72px;
+
+  flex:
+    0 0
+    54px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    9px;
+
+  background:
+    #ffffff;
+
+  color:
+    var(--casa-700);
+
+  font-size:
+    18px;
+
+  font-weight:
+    800;
+}
+
+
+.result-candidate-photo img {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    block;
+
+  object-fit:
+    contain;
+
+  object-position:
+    center;
+}
+
+
+.admin-result-candidate-main {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    11px;
+}
+
+
+.admin-result-candidate-photo {
+  width:
+    48px;
+
+  height:
+    64px;
+
+  flex:
+    0 0
+    48px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    8px;
+
+  background:
+    #ffffff;
+
+  color:
+    var(--casa-700);
+
+  font-size:
+    16px;
+
+  font-weight:
+    800;
+}
+
+
+.admin-result-candidate-photo img {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    block;
+
+  object-fit:
+    contain;
+
+  object-position:
+    center;
+}
+
+
+@media (max-width: 640px) {
+  .result-leader-photo {
+    width:
+      60px;
+
+    height:
+      80px;
+
+    flex-basis:
+      60px;
+  }
+
+
+  .result-candidate-photo {
+    width:
+      45px;
+
+    height:
+      60px;
+
+    flex-basis:
+      45px;
+  }
+
+
+  .admin-result-candidate-photo {
+    width:
+      42px;
+
+    height:
+      56px;
+
+    flex-basis:
+      42px;
+  }
 }
 
 

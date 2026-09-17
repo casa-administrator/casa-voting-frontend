@@ -47,8 +47,6 @@ export interface CreateCandidateRequest {
 
   description: string | null;
 
-  image_url: string | null;
-
   display_order: number;
 
   is_active: boolean;
@@ -67,8 +65,6 @@ export interface UpdateCandidateRequest {
   from: string | null;
 
   description: string | null;
-
-  image_url: string | null;
 
   display_order: number;
 }

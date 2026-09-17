@@ -513,16 +513,26 @@ function AdminCandidateResult({
     <article className="admin-candidate-result">
       <div className="admin-result-rank">{rank}</div>
 
-      <div className="admin-result-candidate">
-        <span>
-          {t("adminResults.candidateNumber", {
-            number: candidate.candidate_number,
-          })}
-        </span>
+      <div className="admin-result-candidate-main">
+        <div className="admin-result-candidate-photo">
+          {candidate.image_url ? (
+            <img src={candidate.image_url} alt={candidateName(candidate)} />
+          ) : (
+            <span>{candidate.candidate_number}</span>
+          )}
+        </div>
 
-        <h3>{candidateName(candidate)}</h3>
+        <div className="admin-result-candidate">
+          <span>
+            {t("adminResults.candidateNumber", {
+              number: candidate.candidate_number,
+            })}
+          </span>
 
-        {candidate.from && <p>{candidate.from}</p>}
+          <h3>{candidateName(candidate)}</h3>
+
+          {candidate.from && <p>{candidate.from}</p>}
+        </div>
       </div>
 
       <div className="admin-result-bar-area">

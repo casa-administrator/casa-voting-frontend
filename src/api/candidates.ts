@@ -47,6 +47,40 @@ export function updateCandidate(
 }
 
 
+export function uploadCandidateImage(
+  candidateId: string,
+  image: File,
+) {
+  const formData =
+    new FormData();
+
+  formData.append(
+    "image",
+    image,
+  );
+
+  return apiRequest<Candidate>(
+    `/admin/candidates/${candidateId}/image`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+}
+
+
+export function deleteCandidateImage(
+  candidateId: string,
+) {
+  return apiRequest<Candidate>(
+    `/admin/candidates/${candidateId}/image`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+
 export function activateCandidate(
   candidateId: string,
 ) {
