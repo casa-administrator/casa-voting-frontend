@@ -513,7 +513,7 @@ function VoteCompleted({
 }
 
 function candidateName(candidate: PublicCandidate) {
-  return [candidate.title, candidate.first_name, candidate.last_name]
+  return [candidate.title, candidate.last_name, candidate.first_name]
     .filter(Boolean)
     .join(" ");
 }
